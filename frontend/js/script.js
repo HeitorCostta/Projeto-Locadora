@@ -1,7 +1,7 @@
 const form = document.getElementById('form');
 const userList = document.getElementById('userList');
 
-// 🔹 CADASTRAR USUÁRIO
+// 🔹 CADASTRAR OU EDITAR USUÁRIO
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
@@ -9,20 +9,38 @@ form.addEventListener('submit', async (event) => {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
 
-  try {
-    const response = await fetch('http://localhost:3000/user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name,
-        email,
-        password
-      })
-    });
+  const editingId = form.dataset.editingId; // 🔥 pega se está editando
 
-    // 🔥 tratamento de erro
+  try {
+    let response;
+
+    if (editingId) {
+      // 🔥 MODO EDITAR (PUT)
+      response = await fetch(`http://localhost:3000/user/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, email })
+      });
+
+      delete form.dataset.editingId; // 🔥 sai do modo edição
+
+    } else {
+      // 🔥 MODO CADASTRO (POST)
+      response = await fetch('http://localhost:3000/user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password
+        })
+      });
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error);
@@ -32,7 +50,7 @@ form.addEventListener('submit', async (event) => {
 
     console.log('Resposta da API:', data);
 
-    alert('Usuário cadastrado com sucesso!');
+    alert(editingId ? 'Usuário atualizado!' : 'Usuário cadastrado!');
 
     loadUsers();
     form.reset();
@@ -61,10 +79,22 @@ async function loadUsers() {
       const text = document.createElement('span');
       text.textContent = `${user.name} - ${user.email}`;
 
-      const button = document.createElement('button');
-      button.textContent = 'Deletar';
+      // 🔥 BOTÃO EDITAR
+      const editButton = document.createElement('button');
+      editButton.textContent = 'Editar';
 
-      button.addEventListener('click', () => {
+      editButton.addEventListener('click', () => {
+        document.getElementById('name').value = user.name;
+        document.getElementById('email').value = user.email;
+
+        form.dataset.editingId = user.id; // 🔥 ativa modo edição
+      });
+
+      // 🔥 BOTÃO DELETE (o seu já tava top)
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Deletar';
+
+      deleteButton.addEventListener('click', () => {
         const confirmDelete = confirm('Tem certeza que deseja deletar?');
 
         if (confirmDelete) {
@@ -73,7 +103,8 @@ async function loadUsers() {
       });
 
       li.appendChild(text);
-      li.appendChild(button);
+      li.appendChild(editButton);
+      li.appendChild(deleteButton);
 
       userList.appendChild(li);
     });
