@@ -8,6 +8,11 @@ const rentalsRoutes = require('./modules/rentals/routes/rentals.routes');
 app.use(express.json());
 app.use(cors());
 
+app.get('/', (req, res) => {
+  return res.json({
+    message: 'API Locadora funcionando 🚀'
+  });
+});
 
 app.use('/user', usersRoutes);
 
